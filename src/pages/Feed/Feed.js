@@ -22,7 +22,7 @@ class Feed extends Component {
   };
 
   componentDidMount() {
-    fetch('URL')
+    fetch('http://localhost:8000/feed/posts')
       .then(res => {
         if (res.status !== 200) {
           throw new Error('Failed to fetch user status.');
@@ -30,6 +30,7 @@ class Feed extends Component {
         return res.json();
       })
       .then(resData => {
+        console.log(resData)
         this.setState({ status: resData.status });
       })
       .catch(this.catchError);
@@ -105,7 +106,10 @@ class Feed extends Component {
     this.setState({
       editLoading: true
     });
-    // Set up data (with image!)
+    const formData = new FormData();
+    formData.append("title", postData.title);
+    formData.append("content", postData.content);
+    formData.append("image", postData.image)
     let url = 'http://localhost:8000/feed/post';
     let method = 'POST'
     if (this.state.editPost) {
@@ -114,13 +118,7 @@ class Feed extends Component {
 
     fetch(url, {
       method: method,
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        title: postData.title,
-        content: postData.content
-      })
+      body: formData
     })
       .then(res => {
         if (res.status !== 200 && res.status !== 201) {
@@ -146,12 +144,7 @@ class Feed extends Component {
           } else if (prevState.posts.length < 2) {
             updatedPosts = prevState.posts.concat(post);
           }
-          return {
-            posts: updatedPosts,
-            isEditing: false,
-            editPost: null,
-            editLoading: false
-          };
+          window.location.reload();
         });
       })
       .catch(err => {
@@ -190,7 +183,6 @@ class Feed extends Component {
         this.setState({ postsLoading: false });
       });
   };
-
   errorHandler = () => {
     this.setState({ error: null });
   };
