@@ -17,7 +17,7 @@ class App extends Component {
   state = {
     showBackdrop: false,
     showMobileNav: false,
-    isAuth: true,
+    isAuth: false,
     token: null,
     userId: null,
     authLoading: false,
@@ -57,9 +57,20 @@ class App extends Component {
   };
 
   loginHandler = (event, authData) => {
+    console.log(authData)
     event.preventDefault();
     this.setState({ authLoading: true });
-    fetch('URL')
+    fetch('http://localhost:8000/auth/login',
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        email: authData.email,
+        password: authData.password
+      })
+    })
       .then(res => {
         if (res.status === 422) {
           throw new Error('Validation failed.');
@@ -98,11 +109,27 @@ class App extends Component {
   };
 
   signupHandler = (event, authData) => {
+    const email = authData.signupForm.email.value
+    const name = authData.signupForm.name.value
+    const password = authData.signupForm.password.value
+    const body = JSON.stringify({
+      email: email,
+      password: password,
+      name: name
+    })
+    console.log(body)
     event.preventDefault();
     this.setState({ authLoading: true });
-    fetch('URL')
+    fetch("http://localhost:8000/auth/signup", { 
+    method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: body
+    })
       .then(res => {
         if (res.status === 422) {
+          console.log(res)
           throw new Error(
             "Validation failed. Make sure the email address isn't used yet!"
           );
