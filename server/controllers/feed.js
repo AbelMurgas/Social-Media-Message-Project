@@ -1,13 +1,24 @@
 import validator from "express-validator";
 
 import Post from "../models/post.js";
+import User from "../models/user.js";
 
 import file from "../utils/file.js";
 const { validationResult } = validator;
 
 export const getPosts = (req, res, next) => {
+  const currentPage = req.query.page || 1;
+  const perPage = 2;
+  let totalItems;
   Post.find()
-    .select("-__v")
+    .countDocuments()
+    .then((count) => {
+      totalItems = count;
+      return Post.find()
+        .skip((currentPage - 1) * perPage)
+        .limit(perPage)
+        .populate("creator");
+    })
     .then((result) => {
       if (!result) {
         error = new Error("Posts no found");
@@ -16,6 +27,7 @@ export const getPosts = (req, res, next) => {
       }
       res.status(200).json({
         posts: result,
+        totalItems: totalItems,
       });
     })
     .catch((error) => {
@@ -33,7 +45,6 @@ export const createPost = (req, res, next) => {
     error.statusCode = 422;
     throw error;
   }
-  console.log(req.file);
   if (!req.file) {
     const error = new Error("No image provided.");
     error.statusCode = 422;
@@ -42,14 +53,23 @@ export const createPost = (req, res, next) => {
   const imageUrl = req.file.path.replace("\\", "/");
   const title = req.body.title;
   const content = req.body.content;
-  const post = new Post({
-    title: title,
-    content: content,
-    imageUrl: imageUrl,
-    creator: { name: "Abel Murgas" },
-  });
-  post
-    .save()
+  let creator;
+  let post;
+  User.findById(req.userId)
+    .then((user) => {
+      creator = user;
+      post = new Post({
+        title: title,
+        content: content,
+        imageUrl: imageUrl,
+        creator: creator._id,
+      });
+      return post.save();
+    })
+    .then((result) => {
+      creator.posts.push(post._id);
+      return creator.save();
+    })
     .then((result) => {
       res.status(201).json({
         message: "Post created successfully!",
@@ -57,7 +77,7 @@ export const createPost = (req, res, next) => {
           _id: new Date().toISOString(),
           title: title,
           content: content,
-          creator: { name: "Abel" },
+          creator: { _id: creator._id, name: creator.name },
           createdAt: new Date(),
         },
       });
@@ -109,10 +129,16 @@ export const updatePost = (req, res, next) => {
   Post.findById(postId)
     .then((post) => {
       if (!post) {
-        error = new Error("Posts no found");
+        const error = new Error("Posts no found");
         error.statusCode = 404;
         throw error;
       }
+      if (post.creator.toString() !== req.userId) {
+        const error = new Error("Not authorized");
+        error.statusCode = 403;
+        throw error;
+      }
+      console.log(req.file);
       if (!req.file) {
         imageUrl = post.imageUrl;
       } else {
@@ -128,7 +154,11 @@ export const updatePost = (req, res, next) => {
       res.status(200).json({ message: "Post updated!", post: result });
     })
     .catch((error) => {
-      file.clearImage(req.file.path);
+      try {
+        file.clearImage(req.file.path);
+      } catch {
+        console.log("File no found");
+      }
       if (!error.statusCode) {
         error.statusCode = 500;
       }
@@ -138,23 +168,36 @@ export const updatePost = (req, res, next) => {
 
 export const deletePost = (req, res, next) => {
   const postId = req.params.postId;
-  console.log(postId);
+  let post;
   Post.findById(postId)
     .then((result) => {
-      console.log(result);
       if (!result) {
         const error = new Error("Post not found");
         error.statusCode = 404;
         throw error;
       }
-      Post.findByIdAndDelete(result)
-        .then((postDeleted) => {
-          file.clearImage(postDeleted.imageUrl);
-          res.status(200).json({message: "Successfully deleted"})
-        })
-        .catch((err) => {
-          throw err;
-        });
+      if (result.creator.toString() !== req.userId) {
+        const error = new Error("Not authorized");
+        error.statusCode = 403;
+        throw error;
+      }
+      post = result;
+      return User.findById(post.creator);
+    })
+    .then((user) => {
+      user.posts.pull(postId);
+      // const index = user.posts.indexOf(post._id);
+      // if (index > -1) {
+      //   user.posts.splice(index, 1);
+      // }
+      return user.save();
+    })
+    .then((result) => {
+      return Post.findByIdAndDelete(post);
+    })
+    .then((postDeleted) => {
+      file.clearImage(postDeleted.imageUrl);
+      res.status(200).json({ message: "Successfully deleted" });
     })
     .catch((error) => {
       if (!error.statusCode) {
