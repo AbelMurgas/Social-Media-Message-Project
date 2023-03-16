@@ -1,21 +1,18 @@
 import express from "express";
 import bodyParser from "body-parser";
+import http from "http";
+import config from "./config.js";
 
 import feedRoutes from "./routes/feed.js";
 import imagesRoutes from "./routes/images.js";
 import authRoutes from "./routes/auth.js";
-import userRoutes from "./routes/user.js"
+import userRoutes from "./routes/user.js";
 
 import mongoose from "mongoose";
 
-import path from "path";
-import { fileURLToPath } from "url";
-
 import multer from "multer";
 
-const __filename = fileURLToPath(import.meta.url);
-
-const __dirname = path.dirname(__filename);
+import socket from "./socket.js";
 
 const app = express();
 
@@ -60,7 +57,7 @@ app.use((req, res, next) => {
 app.use("/feed", feedRoutes);
 app.use("/images", imagesRoutes);
 app.use("/auth", authRoutes);
-app.use("/user", userRoutes)
+app.use("/user", userRoutes);
 
 app.use((error, req, res, next) => {
   console.log(error);
@@ -70,12 +67,20 @@ app.use((error, req, res, next) => {
   res.status(status).json({ message: message, data: data });
 });
 
+const server = http.createServer(app);
+const io = socket.init(server);
+
 mongoose.set("strictQuery", true);
 mongoose
   .connect(
-    "mongodb+srv://abelm:9UUW0bjRKUIfBdrA@cluster0.ssc1tcl.mongodb.net/messages?retryWrites=true&w=majority"
+    `mongodb+srv://${config.MONGO_USER}:${config.MONGO_PASSWORD}@cluster0.ssc1tcl.mongodb.net/${config.MONGO_DEFAULT_DATABASE}?retryWrites=true&w=majority`
   )
   .then((result) => {
-    app.listen(8000);
+    server.listen(config.PORT || 3000, config.HOST, () => {
+      console.log(`Server running at http://${config.HOST}:${config.PORT}/`);
+    });
+    io.on("connection", (socket) => {
+      console.log("A user connected!");
+    });
   })
   .catch((err) => console.log(err));
