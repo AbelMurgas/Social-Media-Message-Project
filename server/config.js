@@ -13,7 +13,6 @@ dotenv.config({
 
 const config = {
     NODE_ENV : process.env.NODE_ENV || 'development',
-    HOST : process.env.HOST || 'localhost',
     PORT : process.env.PORT || 3000,
     MONGO_USER : process.env.MONGO_USER,
     MONGO_PASSWORD : process.env.MONGO_PASSWORD,

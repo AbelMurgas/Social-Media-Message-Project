@@ -6,3 +6,4 @@ node_modules
 #  Enviroment
 development.env
 production.env
+*.log

@@ -1,7 +1,11 @@
 import express from "express";
 import bodyParser from "body-parser";
 import http from "http";
+import helmet from "helmet";
 import config from "./config.js";
+import compression from "compression";
+import morgan from "morgan";
+import fs from "fs";
 
 import feedRoutes from "./routes/feed.js";
 import imagesRoutes from "./routes/images.js";
@@ -14,7 +18,24 @@ import multer from "multer";
 
 import socket from "./socket.js";
 
+import path from "path";
+
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+
+const __dirname = path.dirname(__filename);
+
 const app = express();
+
+const accessLogStream = fs.createWriteStream(
+  path.join(__dirname, "access.log"),
+  { flags: "a" }
+);
+
+app.use(helmet()); // Secure headers
+app.use(compression()); // Compressing data
+app.use(morgan("combined", { stream: accessLogStream })); // Request login log
 
 import { v4 } from "uuid";
 
@@ -70,15 +91,14 @@ app.use((error, req, res, next) => {
 const server = http.createServer(app);
 const io = socket.init(server);
 
+console.log(process.env.MONGO_USER)
 mongoose.set("strictQuery", true);
 mongoose
   .connect(
-    `mongodb+srv://${config.MONGO_USER}:${config.MONGO_PASSWORD}@cluster0.ssc1tcl.mongodb.net/${config.MONGO_DEFAULT_DATABASE}?retryWrites=true&w=majority`
+    `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@cluster0.ssc1tcl.mongodb.net/${process.env.MONGO_DEFAULT_DATABASE}?retryWrites=true&w=majority`
   )
   .then((result) => {
-    server.listen(config.PORT || 3000, config.HOST, () => {
-      console.log(`Server running at http://${config.HOST}:${config.PORT}/`);
-    });
+    server.listen(process.env.PORT || 3000);
     io.on("connection", (socket) => {
       console.log("A user connected!");
     });
