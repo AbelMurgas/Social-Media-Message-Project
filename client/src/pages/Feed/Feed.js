@@ -1,5 +1,5 @@
 import React, { Component, Fragment } from "react";
-import openSocket from "socket.io-client";
+// import openSocket from "socket.io-client";
 
 import Post from "../../components/Feed/Post/Post";
 import Button from "../../components/Button/Button";
@@ -40,61 +40,61 @@ class Feed extends Component {
       .catch(this.catchError);
 
     this.loadPosts();
-    const socket = openSocket("http://localhost:8000");
-    socket.on("posts", (data) => {
-      if (data.action === "create") {
-        this.addPost(data.post);
-      } else if (data.action === "update") {
-        this.updatePost(data.post);
-      } else if (data.action === "delete") {
-        this.deletePost(data.post)
-      }
-    });
+    // const socket = openSocket("http://localhost:8000");
+    // socket.on("posts", (data) => {
+    //   if (data.action === "create") {
+    //     this.addPost(data.post);
+    //   } else if (data.action === "update") {
+    //     this.updatePost(data.post);
+    //   } else if (data.action === "delete") {
+    //     this.deletePost(data.post)
+    //   }
+    // });
   }
 
-  addPost = (post) => {
-    this.setState((prevState) => {
-      const updatedPosts = [...prevState.posts];
-      if (prevState.postPage === 1) {
-        if (prevState.posts.length >= 2) {
-          updatedPosts.pop();
-        }
-        updatedPosts.unshift(post);
-      }
-      return {
-        posts: updatedPosts,
-        totalPosts: prevState.totalPosts + 1,
-      };
-    });
-  };
+  // addPost = (post) => {
+  //   this.setState((prevState) => {
+  //     const updatedPosts = [...prevState.posts];
+  //     if (prevState.postPage === 1) {
+  //       if (prevState.posts.length >= 2) {
+  //         updatedPosts.pop();
+  //       }
+  //       updatedPosts.unshift(post);
+  //     }
+  //     return {
+  //       posts: updatedPosts,
+  //       totalPosts: prevState.totalPosts + 1,
+  //     };
+  //   });
+  // };
 
-  updatePost = (post) => {
-    this.setState((prevState) => {
-      const updatedPosts = [...prevState.posts];
-      const index = updatedPosts.findIndex(obj => obj._id === post._id);
-      if (index > -1) {
-        updatedPosts[index] = post
-      }
-      return {
-        posts: updatedPosts,
-        totalPosts: prevState.totalPosts + 1,
-      };
-    });
-  };
+  // updatePost = (post) => {
+  //   this.setState((prevState) => {
+  //     const updatedPosts = [...prevState.posts];
+  //     const index = updatedPosts.findIndex(obj => obj._id === post._id);
+  //     if (index > -1) {
+  //       updatedPosts[index] = post
+  //     }
+  //     return {
+  //       posts: updatedPosts,
+  //       totalPosts: prevState.totalPosts + 1,
+  //     };
+  //   });
+  // };
 
-  deletePost = (post) => {
-    this.setState((prevState) => {
-      const updatedPosts = [...prevState.posts];
-      const index = updatedPosts.findIndex(obj => obj._id === post._id);
-      if (index > -1) {
-        updatedPosts.splice(index, 1);
-      }
-      return {
-        posts: updatedPosts,
-        totalPosts: prevState.totalPosts + 1,
-      };
-    });
-  };
+  // deletePost = (post) => {
+  //   this.setState((prevState) => {
+  //     const updatedPosts = [...prevState.posts];
+  //     const index = updatedPosts.findIndex(obj => obj._id === post._id);
+  //     if (index > -1) {
+  //       updatedPosts.splice(index, 1);
+  //     }
+  //     return {
+  //       posts: updatedPosts,
+  //       totalPosts: prevState.totalPosts + 1,
+  //     };
+  //   });
+  // };
   
   loadPosts = (direction) => {
     if (direction) {
