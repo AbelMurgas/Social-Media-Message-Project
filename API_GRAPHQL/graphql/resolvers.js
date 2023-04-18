@@ -1,10 +1,29 @@
-import User from "../models/user.js"
+import User from "../models/user.js";
 import bcrypt from "bcryptjs";
+import validator from "validator";
 
 const resolver = {
-  createUser: async function({ userInput }, req) {
+  createUser: async function ({ userInput }, req) {
     // const email = args.userInput.email;
-    const existingUser = await User.findOne({email: userInput.email})
+    console.log(userInput)
+    const errors = [];
+    if (!validator.isEmail(userInput.email)) {
+      errors.push({ message: "E-mail is invalid." });
+    }
+    if (
+      validator.isEmpty(userInput.password) ||
+      !validator.isLength(userInput.password, { min: 5 })
+    ) {
+      errors.push({ message: "Password too short!" });
+    }
+    if (errors.length > 0){
+      const error = new Error("Invalid input.")
+      error.data = errors;
+      error.code = 422
+      throw error;
+    }
+    const existingUser = await User.findOne({ email: userInput.email });
+    console.log(existingUser)
     if (existingUser) {
       const error = new Error("User exist already!");
       throw error;
@@ -13,11 +32,11 @@ const resolver = {
     const user = new User({
       email: userInput.email,
       name: userInput.name,
-      password: hashedPw
+      password: hashedPw,
     });
     const createdUser = await user.save();
-    return {...createdUser._doc, _id: createdUser._id.toString() };
-  }
+    return { ...createdUser._doc, _id: createdUser._id.toString() };
+  },
 };
 
 export default resolver;
